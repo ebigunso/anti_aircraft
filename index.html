@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
     <script src="js/jquery.easytabs.min.js"></script>
     <script src="js/jquery.xdomainajax.js"></script>
+    <script src="js/itemdata.js"></script>
+    <script src="js/shipdata.js"></script>
+    <script src="js/datalib.js"></script>
     <script src="js/data.js"></script>
     <script src="js/ecl.js"></script>
     <script src="js/preset.js"></script>
@@ -18,10 +21,8 @@
     <link rel="stylesheet" href="css/select.css">
   </head>
   <body>
-    <h2>対空砲火計算機　Ver1.2.1.2</h2>
-    <p>対空砲火を調べることが出来るかも(╹‿ ╹.　)</p>
-    <p><strong>注意：これは艦これ改の対空砲火計算式を元に制作しています。<u>本家(ブラウザ版)と多少結果が異なる可能性</u>があるのでご注意下さい。</strong></p>
-    <p><strong><strike>連絡：連合艦隊は只今対応中です。現在仮置き状態ですので、次回以降のアップデート(1.1.6-)をお待ち下さい。</strike><span style="color:red">仮対応しました。</span></strong></p>
+    <h2>対空砲火計算機　Ver2.0.0</h2>
+    <p>艦これの対空砲火を計算できます</p>
     <br>
     <p>
       表示形式：
@@ -36,11 +37,65 @@
         <input type="radio" name="isFriend" value="false" onclick="initialize()"> 深海棲艦
       </span>
       陣形：
-      <span id="formationBox"></span>
+      <select name="formation" id="formation" onchange="calc()">
+        <option kc-id="1" value="1.0" selected>単縦陣</option>
+        <option kc-id="2" value="1.2">複縦陣</option>
+        <option kc-id="3" value="1.6">輪形陣</option>
+        <option kc-id="4" value="1.0">梯形陣</option>
+        <option kc-id="5" value="1.0">単横陣</option>
+        <option kc-id="6" value="1.1">警戒陣</option>
+        <option kc-id="11" value="1.1" style="display:none;" disabled>第一警戒航行序列</option>
+        <option kc-id="12" value="1.0" style="display:none" disabled>第二警戒航行序列</option>
+        <option kc-id="13" value="1.5" style="display:none" disabled>第三警戒航行序列</option>
+        <option kc-id="14" value="1.0" style="display:none" disabled>第四警戒航行序列</option>
+      </select>
       スロット機数：
       <input type="number" name="slotNum" id="slotNumSpinner" value="0" min="0" oninput="calc()" onchange="calc()">
       対空カットイン種別：
-      <span id="tyku_cutinBox"></span>
+      <select name="tyku_cutin" id="tyku_cutin" onchange="calc()" title="14番以降は検証ソースです。AとBは合計値だけ合わせて後は適当に配置しています。">
+        <option value="0" selected>0:なし</option>
+        <option value="1">1:高角砲x2/電探&lt;秋月&gt;</option>
+        <option value="2">2:高角砲/電探&lt;秋月&gt;</option>
+        <option value="3">3:高角砲x2&lt;秋月&gt;</option>
+        <option value="4">4:大口径主砲/三式弾/高射装置/電探</option>
+        <option value="5">5:高角砲+高射装置x2/電探</option>
+        <option value="6">6:大口径主砲/三式弾/高射装置</option>
+        <option value="7">7:高角砲/高射装置/電探</option>
+        <option value="8">8:高角砲+高射装置/電探</option>
+        <option value="9">9:高角砲/高射装置</option>
+        <option value="10">10:高角砲/集中機銃/電探&lt;摩耶&gt;</option>
+        <option value="11">11:高角砲/集中機銃&lt;摩耶&gt;</option>
+        <option value="12">12:集中機銃/機銃/電探</option>
+        <option value="13" disabled>13:高角砲/機銃/電探</option>
+        <option value="14">14:高角砲/機銃/電探&lt;五十鈴&gt;</option>
+        <option value="15">15:高角砲/機銃&lt;五十鈴&gt;</option>
+        <option value="16">16:高角砲/機銃/電探&lt;霞&gt;</option>
+        <option value="17">17:高角砲/機銃&lt;霞&gt;</option>
+        <option value="18">18:集中機銃&lt;皐月&gt;</option>
+        <option value="19">19:高角砲(非高射装置)/集中機銃&lt;鬼怒&gt;</option>
+        <option value="20">20:集中機銃&lt;鬼怒&gt;</option>
+        <option value="21">21:高角砲/電探&lt;由良&gt;</option>
+        <option value="22">22:集中機銃&lt;文月&gt;</option>
+        <option value="23">23:機銃(非集中)&lt;UIT-25&gt;</option>
+        <option value="24">24:高角砲/機銃(非集中)&lt;龍田&gt;</option>
+        <option value="25">25:噴進砲改二/電探/三式弾&lt;伊勢&gt;</option>
+        <option value="26">26:高角砲+増設機銃/電探&lt;武蔵&gt;</option>
+        <option value="27" disabled>27:不明</option>
+        <option value="28">28:噴進砲改二/電探&lt;伊勢&gt;</option>
+        <option value="29">29:高角砲/電探&lt;浜風&gt;</option>
+        <option value="30">30:高角砲x3&lt;天龍&gt;</option>
+        <option value="31">31:高角砲x2&lt;天龍&gt;</option>
+        <option value="32">32:ロケランx2 or FCR/ポンポン砲 or ロケラン/ポンポン砲&lt;英国&gt;</option>
+        <option value="33">33:高角砲/機銃(非集中)</option>
+        <option value="34">34:Fletcher砲改+GFCSx2\&lt;Johnston&gt;</option>
+        <option value="35">35:Fletcher砲改+GFCS/Fletcher砲改&lt;Johnston&gt;</option>
+        <option value="36">36:Fletcher砲改x2/GFCS&lt;Johnston&gt;</option>
+        <option value="37">37:Fletcher砲改x2&lt;Johnston&gt;</option>
+        <option value="38" disabled>38:不明</option>
+        <option value="39">39:Atlanta砲+GFCS/Atlanta砲&lt;Atlanta&gt;</option>
+        <option value="40">40:Atlanta砲x2/GFCS&lt;Atlanta&gt;</option>
+        <option value="41">41:Atlanta砲x2&lt;Atlanta&gt;</option>
+      </select>
       <span class="parseFriend">
         <span title="艦これブラウザ版の補正をかけます。艦これ改で計算する場合はチェックを外して下さい。"><input type="checkbox" id="useBrowserCheckBox" onchange="calc()" checked>ブラウザ版補正</span>
         <span class="space"></span>
@@ -58,29 +113,6 @@
         <input type="button" value="反映" onclick="parseName($('#parseNameLabel').val().split(/[、,\,]/))">
       </span>
     </p>
-    <p class="parseEnemy">
-      <span title="wikiからデータを引っ張ってきて反映します。">編成プリセット(β)→</span>
-      海域：
-      <select id="presetAreaIdBox" onchange="setPresetAreaNo()">
-      </select>
-      －
-      <select id="presetAreaNoBox" onchange="setPresetMapCell()">
-      </select>
-      セル:
-      <select id="presetMapCellBox" onchange="setPresetMapDifficulty()">
-      </select>
-      難易度:
-      <select id="presetMapDifficultyBox" onchange="setPresetEnemyPattern()">
-      </select>
-      パターン:
-      <select id="presetEnemyPatternBox" onchange="setPresetEnemyFormation()">
-      </select>
-      陣形:
-      <select id="presetEnemyFormationBox">
-      </select>
-      <input type="button" value="反映" id="presetButton" onclick="setPresetEnemyData()" disabled>
-    </p>
-    <Hr Width="100%">
     <p>
       全滅確率：
       <input name="annihilation" id="annihilationLabel" value="100.00%" readonly>
@@ -106,6 +138,7 @@
           <td>装備3</td>
           <td>装備4</td>
           <td>装備5</td>
+          <td>装備6</td>
           <td>素対空</td>
           <td>加重対空</td>
           <td id="f1shotDownAheader">撃墜数A</td>
@@ -123,6 +156,7 @@
           <td id="f1s1item3" class="input"></td>
           <td id="f1s1item4" class="input"></td>
           <td id="f1s1item5" class="input"></td>
+          <td id="f1s1item6" class="input"></td>
           <td id="f1s1tyku" class="result"></td>
           <td id="f1s1kaju" class="result"></td>
           <td id="f1s1shotDownA" class="result"></td>
@@ -140,6 +174,7 @@
           <td id="f1s2item3" class="input"></td>
           <td id="f1s2item4" class="input"></td>
           <td id="f1s2item5" class="input"></td>
+          <td id="f1s2item6" class="input"></td>
           <td id="f1s2tyku" class="result"></td>
           <td id="f1s2kaju" class="result"></td>
           <td id="f1s2shotDownA" class="result"></td>
@@ -157,6 +192,7 @@
           <td id="f1s3item3" class="input"></td>
           <td id="f1s3item4" class="input"></td>
           <td id="f1s3item5" class="input"></td>
+          <td id="f1s3item6" class="input"></td>
           <td id="f1s3tyku" class="result"></td>
           <td id="f1s3kaju" class="result"></td>
           <td id="f1s3shotDownA" class="result"></td>
@@ -174,6 +210,7 @@
           <td id="f1s4item3" class="input"></td>
           <td id="f1s4item4" class="input"></td>
           <td id="f1s4item5" class="input"></td>
+          <td id="f1s4item6" class="input"></td>
           <td id="f1s4tyku" class="result"></td>
           <td id="f1s4kaju" class="result"></td>
           <td id="f1s4shotDownA" class="result"></td>
@@ -191,6 +228,7 @@
           <td id="f1s5item3" class="input"></td>
           <td id="f1s5item4" class="input"></td>
           <td id="f1s5item5" class="input"></td>
+          <td id="f1s5item6" class="input"></td>
           <td id="f1s5tyku" class="result"></td>
           <td id="f1s5kaju" class="result"></td>
           <td id="f1s5shotDownA" class="result"></td>
@@ -208,6 +246,7 @@
           <td id="f1s6item3" class="input"></td>
           <td id="f1s6item4" class="input"></td>
           <td id="f1s6item5" class="input"></td>
+          <td id="f1s6item6" class="input"></td>
           <td id="f1s6tyku" class="result"></td>
           <td id="f1s6kaju" class="result"></td>
           <td id="f1s6shotDownA" class="result"></td>
@@ -231,6 +270,7 @@
           <td>装備3</td>
           <td>装備4</td>
           <td>装備5</td>
+          <td>装備6</td>
           <td>素対空</td>
           <td>加重対空</td>
           <td id="f2shotDownAheader">撃墜数A</td>
@@ -248,6 +288,7 @@
           <td id="f2s1item3" class="input"></td>
           <td id="f2s1item4" class="input"></td>
           <td id="f2s1item5" class="input"></td>
+          <td id="f2s1item6" class="input"></td>
           <td id="f2s1tyku" class="result"></td>
           <td id="f2s1kaju" class="result"></td>
           <td id="f2s1shotDownA" class="result"></td>
@@ -265,6 +306,7 @@
           <td id="f2s2item3" class="input"></td>
           <td id="f2s2item4" class="input"></td>
           <td id="f2s2item5" class="input"></td>
+          <td id="f2s2item6" class="input"></td>
           <td id="f2s2tyku" class="result"></td>
           <td id="f2s2kaju" class="result"></td>
           <td id="f2s2shotDownA" class="result"></td>
@@ -282,6 +324,7 @@
           <td id="f2s3item3" class="input"></td>
           <td id="f2s3item4" class="input"></td>
           <td id="f2s3item5" class="input"></td>
+          <td id="f2s3item6" class="input"></td>
           <td id="f2s3tyku" class="result"></td>
           <td id="f2s3kaju" class="result"></td>
           <td id="f2s3shotDownA" class="result"></td>
@@ -299,6 +342,7 @@
           <td id="f2s4item3" class="input"></td>
           <td id="f2s4item4" class="input"></td>
           <td id="f2s4item5" class="input"></td>
+          <td id="f2s4item6" class="input"></td>
           <td id="f2s4tyku" class="result"></td>
           <td id="f2s4kaju" class="result"></td>
           <td id="f2s4shotDownA" class="result"></td>
@@ -316,6 +360,7 @@
           <td id="f2s5item3" class="input"></td>
           <td id="f2s5item4" class="input"></td>
           <td id="f2s5item5" class="input"></td>
+          <td id="f2s5item6" class="input"></td>
           <td id="f2s5tyku" class="result"></td>
           <td id="f2s5kaju" class="result"></td>
           <td id="f2s5shotDownA" class="result"></td>
@@ -333,6 +378,7 @@
           <td id="f2s6item3" class="input"></td>
           <td id="f2s6item4" class="input"></td>
           <td id="f2s6item5" class="input"></td>
+          <td id="f2s6item6" class="input"></td>
           <td id="f2s6tyku" class="result"></td>
           <td id="f2s6kaju" class="result"></td>
           <td id="f2s6shotDownA" class="result"></td>
@@ -361,54 +407,23 @@
       </div>
     </div>
     <p>・撃墜数の見方について</p>
-    <p>撃墜数A、Bの見方 -> 「対空砲火失敗時 - 対空砲火成功時」　最終撃墜数の見方 -> 「最低撃墜数 - 最高撃墜数」</p>
+    <p>最終撃墜数の見方 -> 「最低撃墜数 - 最高撃墜数」</p>
     <p>・デッキビルダーから反映機能について</p>
     <p><q cite=”http://kancolle-calc.net/deckbuilder.html”>{version: 4, f1: {s1: {id: '100', lv: 40, luck: -1, items:{i1:{id:1, rf: 4, mas:7},{i2:{id:3, rf: 0}}...,ix:{id:43}}}, s2:{}...},...}</q></p>
     <p><a href="http://kancolle-calc.net/deckbuilder.html" target="_blank">艦隊シミュレーター＆デッキビルダー</a>で排出された上のようなフォーマットを入力してから反映ボタンをクリックすることで、お手軽に実行ができます(و 'ω')و</p>
-    <p>・対空カットイン14番以降について</p>
-    <p>対空カットイン14番以降については、検証で判明した部分を使っています。<a href="https://twitter.com/galpokopii/status/812180211416502272" target="_blank">ソース</a></p>
-    <p>しかし、検証でもAとBの詳細な値を求めることは不可能なため、この2つの値については合計値だけ合わせて後は適当に配置しています。</p>
-    <p>・IDから反映機能について</p>
-    <p>艦IDから深海棲艦を反映します。半角または全角数字で入力、区切り文字は数字以外なら多分何でもいけます。</p>
-    <p>第二艦隊もやる場合は繋げて書いて下さい。 例：「501,502,503,504,505,506,507,508,509,510,511,512」</p>
-    <p>・名前から反映機能について</p>
-    <p>艦名から深海棲艦を反映します。読点「、」またはカンマ「,」で区切ること。第二艦隊分も繋げて書く。</p>
-    <p>第二艦隊もやる場合は繋げて書いて下さい。 基本的にはwikiの敵編成をコピペで大丈夫だと思います。ID反映と比べるとかなり精度が落ちるので、その点はご了承下さい。</p>
-    <p>例:6-4ボスパターン1「離島棲姫(B)*17、砲台小鬼(A)*18、砲台小鬼(B)*19、砲台小鬼(C)*20、集積地棲姫-壊(C)*21、軽巡ホ級flagship」</p>
-    <p>・プリセット機能(β)について</p>
-    <p>wikiからデータを引っ張ってきて反映します。大体反映されると思いますが、バグが残ってるかもしれません。また、wikiの状態によってかなり左右されます。ご了承下さい。</p>
-    <br>
-    <p>ソースに関しては<a href="https://twitter.com/KennethWWKK" target="_blank">@KennethWWKK</a>さんの
-    <a href="https://docs.google.com/document/d/1tqYyqzdc1RT_fYDKFMcUId0kOZHCdGpVsObm6yt-Yco/edit?usp=sharing" target="_blank">艦これ改のソフトって解析翻訳</a>をご参照下さい。</p>
-    <p>ご要望、ご指摘お待ちしてます(╹‿ ╹.　)</p>
-    <p>作成者：<a href="https://twitter.com/Nishisonic" target="_blank">@Nishisonic</a></p>
-    <!-- アクセス解析(╹‿ ╹.　) -->
-    <a href="https://nishisonic.github.io/anti_aircraft/"><img src="https://ga-beacon.appspot.com/UA-79452548-2/nishisonic.github.io/anti_aircraft?pixel"/></a>
-    履歴<br>
+    
+    <br/>
+    <p>既知の問題:</p>
+    <ul>
+      <li>空襲戦未対応</li>
+      <li>A/B式や深海側の計算が正しく動作しない(削除してないだけ)</li>
+    </ul>
+
+    <br/>
+    <p>オリジナル版作成者：<a href="https://twitter.com/Nishisonic" target="_blank">@Nishisonic</a></p>
+    <p>現行版作成者: <a href="https://twitter.com/ebigunso" target="_blank">@ebigunso</a></p>
     <textarea cols="40" rows="6" style="overflow:auto;width:50em;" readonly>
-Ver1.2.1 2017/02/05 表示変更&#13;
-Ver1.2.0 2017/02/05 プリセット機能、ブラウザ版補正追加&#13;
-Ver1.1.9 2017/01/25 連合艦隊仮対応、バグ修正&#13;
-Ver1.1.8 2017/01/23 名前から反映できる機能追加&#13;
-Ver1.1.7 2017/01/22 IDから反映できる機能追加、砲台小鬼のステータスのミスを修正&#13;
-Ver1.1.6 2017/01/19 割合撃墜などの従来の表示追加、対空CI種別追加&#13;
-Ver1.1.5 2017/01/18 レイアウト大幅変更&#13;
-Ver1.1.4 2017/01/17 バグ修正、注意文追加&#13;
-Ver1.1.3 2017/01/10 デッキビルダーとの互換機能追加&#13;
-Ver1.1.2 2017/01/10 バグ修正&#13;
-Ver1.1.1 2017/01/10 バグ修正、最低撃墜数追加&#13;
-Ver1.1.0 2017/01/09 艦娘の対空砲火バグ修正&#13;
-Ver1.0.9 2017/01/09 艦隊防空値のバグ修正&#13;
-Ver1.0.8 2017/01/09 レイアウト変更&#13;
-Ver1.0.7 2017/01/09 改修度追加&#13;
-Ver1.0.6 2017/01/08 バグ修正&#13;
-Ver1.0.5 2017/01/08 対空CI追加、味方も計算できるよう改良&#13;
-Ver1.0.4 2017/01/08 cssによるレイアウト変更&#13;
-Ver1.0.3 2017/01/08 レイアウト変更&#13;
-Ver1.0.2 2017/01/07 バグ修正、編成リセットボタン追加&#13;
-Ver1.0.1 2017/01/07 バグ修正&#13;
-Ver1.0.0 2017/01/07 初版&#13;
+      ver2.0.0 2020/02/02 Nishisonicさんの計算機をベースに大幅改修. wiki記載のブラウザ版計算式を用いるように変更, 新艦娘・新アイテムに対応. A/B式および深海側の計算対応とりやめ.
     </textarea>
-    <p/>
   </body>
-<html>
+</html>

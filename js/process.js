@@ -1,6 +1,4 @@
 $(function(){
-  $('#formationBox').load('formation.html');
-  $('#tyku_cutinBox').load('tyku_cutin.html');
   for(let i = 1;i <= 2;i++){
     for(let j = 1;j <= 6;j++){
       $('#f' + i + 's' + j + 'name').on( "click", function() {
@@ -38,12 +36,7 @@ function setStatus(parent,shipid,isFriend){
   let fleet = parent.substring(2,3);
   let ship = parent.substring(4,5);
   for(let i = 1;i <= 5;i++){
-    let itemid = SHIP_DATA[shipid]["i"+i];
-    if(itemid === undefined || itemid === 0){
-      resetItem(fleet,ship,i);
-    } else {
-      setItem(fleet,ship,i,itemid,0,isFriend);
-    }
+    resetItem(fleet,ship,i);
   }
   calc();
 }
@@ -97,10 +90,11 @@ function calc(){
         let t_alv = '#f' + i + 's' + j + 'item' + k + 'alv option:selected';
         let itemid = $(t_item).val();
         if(itemid <= 0) continue;
-        let tyku = ITEM_DATA[itemid].tyku;
+        let item = itemIdRetrieve(itemid);
+        let tyku = item.aac;
         if(tyku <= 0) continue;
         let alv = $(t_alv).val()|0;
-        let type = ITEM_DATA[itemid].type;
+        let type = item.type[3];
         // 艦隊防空加重對空值 = 裝備對空值*艦隊防空裝備定數A
         let kantaiKajuValue = tyku * getKantaiItem_A(type,itemid);
         // 艦隊防空裝備改修補正 = 艦隊防空裝備定數B*sqrt(★)
@@ -115,9 +109,9 @@ function calc(){
     }
   }
   // 艦隊防空補正 = int( 陣型補正*(∑(1艦娘の艦隊防空補正)) )
-  // ブラウザ版補正(1.3で割る)
-  kantaiAirBonus = Math.floor($('#formationBox').children().val() * kantaiAirBonus / ((isBrowser && isFriend) ? 1.3 : 1.0));
-  $('#kantaiLabel').val(kantaiAirBonus);
+  // ブラウザ版補正((2/1.3)をかける)
+  kantaiAirBonus = Math.floor($('#formationBox').children().val() * kantaiAirBonus) * ((isBrowser && isFriend) ? 2/1.3 : 1.0);
+  $('#kantaiLabel').val(kantaiAirBonus.toFixed(3));
   let shipNum = 0;
   let annihilationCnt = 0;
   let slotNum = $('#slotNumSpinner').val();
@@ -134,7 +128,8 @@ function calc(){
       let t_name = '#f' + i + 's' + j + 'name';
       let shipid = $(t_name).val();
       if(shipid > 0){
-        let shipTyku = SHIP_DATA[shipid].tyku;
+        let ship = shipIdRetrieve(shipid);
+        let shipTyku = ship.max_aac;
         let totalItemTyku = 0;
         let sum = 0;
         for(let k = 1;k <= 5;k++){
@@ -142,8 +137,9 @@ function calc(){
           let t_alv = '#f' + i + 's' + j + 'item' + k + 'alv option:selected';
           let itemid = $(t_item).val();
           if(itemid <= 0) continue;
-          let itemTyku = ITEM_DATA[itemid].tyku;
-          let type = ITEM_DATA[itemid].type;
+          let item = itemIdRetrieve(itemid);
+          let itemTyku = item.aac;
+          let type = item.type[3];
           let alv = $(t_alv).val()|0;
           // 艦船對空改修補正 = 裝備定數B*sqrt(★)
           let kaishuBonus = getKansenItem_B(type,itemTyku) * Math.sqrt(alv);
@@ -151,9 +147,9 @@ function calc(){
           // 裝備對空值*裝備定數A
           sum += itemTyku * getKansenItem_A(type) + kaishuBonus;
         }
-        // 味方艦船加重對空值 = 素對空值 / 2 + ∑(裝備對空值*裝備定數A + 艦船對空改修補正)
+        // 味方艦船加重對空值 = 2 * [(素對空值 + ∑(裝備對空值*裝備定數A + 艦船對空改修補正)) / 2]
         // 相手艦船加重對空值 = sqrt(素對空值 + 裝備對空值) + ∑(裝備對空值*裝備定數A + 艦船對空改修補正)
-        let kaju = (isFriend ? (shipTyku / 2) : (Math.sqrt(shipTyku + totalItemTyku))) + sum;
+        let kaju = (isFriend ? 2 * Math.floor((shipTyku + sum) / 2) : (Math.sqrt(shipTyku + totalItemTyku)) + sum);
         // 最終加重對空值 = (艦船加重對空值 + 艦隊防空補正)*基本定數*味方相手補正(0.8(味方の対空砲火) or 0.75(相手の対空砲火))
         let kajuTotal = (kaju + kantaiAirBonus) * AIR_BATTLE_FACTOR * (isFriend ? FRIEND_FACTOR : ENEMY_FACTOR);
         let tykuCIkind = $('#tyku_cutinBox').children().val()|0;
@@ -169,31 +165,32 @@ function calc(){
         let proportionShotDown = getProportion(kaju,isCombined,i);
         let proportionShotDownNum = getProportionNum(kaju,slotNum,isCombined,i);
         // 固定撃墜
-        let fixedShotDown = getFixedNum(kajuTotal,tykuCIkind,isFriend,isCombined,i);
+        let fixedShotDown = getFixedNum(kaju+kantaiAirBonus,tykuCIkind,isFriend,isCombined,i);
         // 最低保証
         let guaranteedShotDown = getGuaranteedNum(tykuCIkind,isFriend);
 
         // 確率計算
         shipNum++;
-        if((minA + minB) >= slotNum){
+        if((guaranteedShotDown) >= slotNum){
           annihilationCnt += 2 * 2;
         } else {
-          if((maxA + minB) >= slotNum) annihilationCnt += 2;
-          if((minA + maxB) >= slotNum) annihilationCnt += 2;
-          if(!((maxA + minB) >= slotNum || (minA + maxB) >= slotNum) && (maxA + maxB) >= slotNum){
+          if((proportionShotDownNum + guaranteedShotDown) >= slotNum) annihilationCnt += 2;
+          if((fixedShotDown + guaranteedShotDown) >= slotNum) annihilationCnt += 2;
+          if(!((proportionShotDownNum + guaranteedShotDown) >= slotNum || (fixedShotDown + guaranteedShotDown) >= slotNum) && (proportionShotDownNum + fixedShotDown + guaranteedShotDown) >= slotNum){
             annihilationCnt++;
           }
-          if(maxA >= slotNum && maxB >= slotNum) annihilationCnt -= 2;
+          if((proportionShotDownNum + guaranteedShotDown) >= slotNum && (fixedShotDown + guaranteedShotDown) >= slotNum) annihilationCnt -= 2;
         }
         // 表示処理
-        document.getElementById(t_kaju).innerHTML = (kajuTotal).toFixed(2);
+        document.getElementById(t_kaju).innerHTML = (kaju).toFixed(2);
         document.getElementById(t_shotDownA).innerHTML = minA + " - " + maxA;
         document.getElementById(t_shotDownB).innerHTML = minB + " - " + maxB;
         document.getElementById(t_proportionShotDown).innerHTML = proportionShotDownNum + " (" + (proportionShotDown * 100).toFixed(2) + "%)";
         document.getElementById(t_fixedShotDown).innerHTML = fixedShotDown;
         document.getElementById(t_guaranteedShotDown).innerHTML = guaranteedShotDown;
-        // 最終擊墜數 = 擊墜數A + 擊墜數B
-        document.getElementById(t_total).innerHTML = (minA + minB) + " - " + (maxA + maxB);
+        // 最終擊墜數 = 擊墜數A + 擊墜數B **depricated**
+        // 最低撃墜数 = 最低保証, 最高撃墜数 = 割合撃墜 + 固定撃墜 + 最低保証
+        document.getElementById(t_total).innerHTML = guaranteedShotDown + " - " + (proportionShotDownNum + fixedShotDown + guaranteedShotDown);
       } else {
         // 表示処理
         document.getElementById(t_kaju).innerHTML = "0.00";
@@ -412,9 +409,11 @@ function changeShowRow(){
 }
 
 function setShip(i,j,shipid){
+  let ship = shipIdRetrieve(shipid);
   $('#f'+i+'s'+j+'name').val(shipid);
-  $('#f'+i+'s'+j+'name').html('<img src="img/ship/'+shipid+'.png" width="160" height="40" title="'+shipid+':'+SHIP_DATA[shipid].name+' 対空:'+SHIP_DATA[shipid].tyku+'">');
-  $('#f'+i+'s'+j+'tyku').text(SHIP_DATA[shipid].tyku);
+  //kancolle-calc.netさんから画像を借りる
+  $('#f'+i+'s'+j+'name').html('<img src="http://kancolle-calc.net/img/banner/'+shipid+'.jpg" width="160" height="40" title="'+shipid+':'+ship.name+' 対空:'+ship.max_aac+'">');
+  $('#f'+i+'s'+j+'tyku').text(ship.max_aac);
 }
 
 function resetShip(i,j){
@@ -427,12 +426,13 @@ function resetShip(i,j){
 }
 
 function setItem(i,j,k,itemid,alv,isFriend){
-  let img = '<img src="img/itemicon/'+ITEM_DATA[itemid].type+'.png" width="30" height="30" style="float:left;margin-right:5px;">';
+  let item = itemIdRetrieve(itemid);
+  let img = '<img src="img/itemicon/'+item.type[3]+'.png" width="30" height="30" style="float:left;margin-right:5px;">';
   $('#f'+i+'s'+j+'item'+k).val(itemid);
-  $('#f'+i+'s'+j+'item'+k).attr('title',"対空+"+ITEM_DATA[itemid].tyku);
+  $('#f'+i+'s'+j+'item'+k).attr('title',"対空+"+item.aac);
   if(isFriend){
     let style = '<select id="f'+i+'s'+j+'item'+k+'alv'+'" style="color:#45A9A5"></select>';
-    $('#f'+i+'s'+j+'item'+k).html(img+ITEM_DATA[itemid].name+' '+style);
+    $('#f'+i+'s'+j+'item'+k).html(img+item.name+' '+style);
     /* 改修度部分 */
     let selectBox = ["","★+1","★+2","★+3","★+4","★+5","★+6","★+7","★+8","★+9","★max"];
     for(let l = 0;l < selectBox.length;l++){
@@ -445,7 +445,7 @@ function setItem(i,j,k,itemid,alv,isFriend){
     $('#f'+i+'s'+j+'item'+k+'alv').on("click",function(event){ event.stopPropagation(); });
     $('#f'+i+'s'+j+'item'+k+'alv').on('change',function(event){ calc(); });
   } else {
-    $('#f'+i+'s'+j+'item'+k).html(img+ITEM_DATA[itemid].name);
+    $('#f'+i+'s'+j+'item'+k).html(img+item.name);
   }
 }
 

@@ -56,9 +56,10 @@ function createItemTabs(isFriend){
     typelist[type] = [];
   }
 
-  for(let id in ITEM_DATA){
+  for(let item in gItems){
+    let id = gItems[item].id;
     if((isFriend && id > 0 && id <= 500)||(!isFriend && id > 500)){
-      typelist[ITEM_DATA[id].type].push(id);
+      typelist[gItems[item].type[3]].push(id);
     }
   }
 
@@ -94,8 +95,9 @@ function createItemTable(isFriend,typelist){
     for(let id in typelist[type]){
       if(id % 5 == 0) insert.append('</tr><tr>');
       let itemid = typelist[type][id];
-      let name = ITEM_DATA[itemid].name;
-      let tyku = ITEM_DATA[itemid].tyku;
+      let item = itemIdRetrieve(itemid);
+      let name = item.name;
+      let tyku = item.aac;
       insert.append('<td class="btn" onclick="onSelectItem('+itemid+','+isFriend+')" title="'+itemid+':'+name+' 対空+'+tyku+'">'+name+'</td>');
     }
     insert.append('</tr>');
@@ -132,14 +134,32 @@ function createShipTabs(isFriend){
   let insert = $('<ul>').attr("class","etabs");
   let typelist = {};
 
-  for(let type in SHIP_TYPE_DATA){
-    typelist[type] = [];
+  for(let typeID in SHIP_TYPE_DATA){
+    typelist[typeID] = [];
   }
 
-  for(let id in SHIP_DATA){
-    if((isFriend && id > 0 && id <= 500)||(!isFriend && id > 500)){
-      if(SHIP_DATA[id].fr){
-        typelist[SHIP_DATA[id].type].push(id);
+  for(let ship in gShips){
+    let id = gShips[ship].id;
+    if(id > 1500) break; //深海は見ない
+    let typeID = SHIP_TYPE_ID_DATA[gShips[ship].type];
+    let isFinal = gShips[ship].next === "0" ? true : false;
+
+    // コンバート改装かどうかを自分のIDが登場するかで判定
+    // 3種コンバートまで判定
+    if(!isFinal){
+      let nextid = gShips[ship].next;
+      if((nextid = shipIdRetrieve(nextid).next) == id){
+        isFinal = true;
+      } else if(nextid != "0"){
+        if(shipIdRetrieve(nextid).next == id){
+          isFinal = true;
+        }
+      }
+    }
+
+    if((isFriend && id > 0 && id <= 1500)){
+      if(isFinal){
+        typelist[typeID].push(id);
       } else {
         typelist[0].push(id);
       }
@@ -178,9 +198,11 @@ function createShipTable(isFriend,typelist){
     for(let id in typelist[type]){
       if(id % 5 == 0) insert.append('</tr><tr>');
       let shipid = typelist[type][id];
-      let name = SHIP_DATA[shipid].name;
-      let tyku = SHIP_DATA[shipid].tyku;
-      let img = '<img src="img/ship/'+shipid+'.png" width="100%" title="'+shipid+':'+name+' 対空:'+tyku+'">';
+      let ship = shipIdRetrieve(shipid);
+      let name = ship.name;
+      let tyku = ship.max_aac;
+      //kancolle-calc.netさんから画像を借りる
+      let img = '<img src="http://kancolle-calc.net/img/banner/'+shipid+'.jpg" width="100%" title="'+shipid+':'+name+' 対空:'+tyku+'">';
       insert.append('<td><table><tbody onclick="onSelectShip('+shipid+','+isFriend+')"><tr><td>'+img+'</td></tr><tr><td>'+name+'</td></tr></tbody></table></td>');
     }
     insert.append('</tr>');
